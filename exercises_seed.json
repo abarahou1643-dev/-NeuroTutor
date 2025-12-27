@@ -1,0 +1,49 @@
+﻿[
+  {"title":"Eq lineaire 1","description":"Equation 1er degre","problemStatement":"Resoudre : 2x = 10","difficulty":"BEGINNER","topics":["Algebre"],"tags":["Equations","Pour debuter"],"solution":"x=5","hints":["Diviser par 2"],"steps":["2x=10","x=10/2","x=5"],"responseTypes":["TEXT"],"estimatedTime":5,"points":10,"isPublished":true,"isApproved":true},
+
+  {"title":"Eq lineaire 2","description":"Equation 1er degre","problemStatement":"Resoudre : x + 7 = 12","difficulty":"BEGINNER","topics":["Algebre"],"tags":["Equations","Pour debuter"],"solution":"x=5","hints":["Soustraire 7"],"steps":["x+7=12","x=12-7","x=5"],"responseTypes":["TEXT"],"estimatedTime":5,"points":10,"isPublished":true,"isApproved":true},
+
+  {"title":"Eq lineaire 3","description":"Equation 1er degre","problemStatement":"Resoudre : 5x = 35","difficulty":"BEGINNER","topics":["Algebre"],"tags":["Equations","Pour debuter"],"solution":"x=7","hints":["Diviser par 5"],"steps":["5x=35","x=35/5","x=7"],"responseTypes":["TEXT"],"estimatedTime":5,"points":10,"isPublished":true,"isApproved":true},
+
+  {"title":"Eq lineaire 4","description":"Equation 1er degre","problemStatement":"Resoudre : x - 9 = 4","difficulty":"BEGINNER","topics":["Algebre"],"tags":["Equations"],"solution":"x=13","hints":["Ajouter 9"],"steps":["x-9=4","x=4+9","x=13"],"responseTypes":["TEXT"],"estimatedTime":5,"points":10,"isPublished":true,"isApproved":true},
+
+  {"title":"Priorites 1","description":"Priorites operatoires","problemStatement":"Calculer : 3 + 2 * 5","difficulty":"BEGINNER","topics":["Calcul"],"tags":["Priorites","Pour debuter"],"solution":"13","hints":["Faire la multiplication d abord"],"steps":["2*5=10","3+10=13"],"responseTypes":["TEXT"],"estimatedTime":4,"points":10,"isPublished":true,"isApproved":true},
+
+  {"title":"Priorites 2","description":"Priorites operatoires","problemStatement":"Calculer : (8 - 3) * 2","difficulty":"BEGINNER","topics":["Calcul"],"tags":["Priorites"],"solution":"10","hints":["Calculer la parenthese"],"steps":["8-3=5","5*2=10"],"responseTypes":["TEXT"],"estimatedTime":4,"points":10,"isPublished":true,"isApproved":true},
+
+  {"title":"Fractions 1","description":"Addition de fractions","problemStatement":"Calculer : 1/2 + 1/4","difficulty":"BEGINNER","topics":["Calcul"],"tags":["Fractions","Pour debuter"],"solution":"3/4","hints":["Mettre au meme denominateur (4)"],"steps":["1/2=2/4","2/4+1/4=3/4"],"responseTypes":["TEXT"],"estimatedTime":7,"points":15,"isPublished":true,"isApproved":true},
+
+  {"title":"Fractions 2","description":"Soustraction de fractions","problemStatement":"Calculer : 3/4 - 1/4","difficulty":"BEGINNER","topics":["Calcul"],"tags":["Fractions"],"solution":"1/2","hints":["Meme denominateur"],"steps":["3/4-1/4=2/4","2/4=1/2"],"responseTypes":["TEXT"],"estimatedTime":6,"points":15,"isPublished":true,"isApproved":true},
+
+  {"title":"Pourcentage 1","description":"Pourcentage","problemStatement":"Calculer 20% de 50","difficulty":"BEGINNER","topics":["Calcul"],"tags":["Pourcentages","Pour debuter"],"solution":"10","hints":["20% = 0.2"],"steps":["0.2*50=10"],"responseTypes":["TEXT"],"estimatedTime":6,"points":15,"isPublished":true,"isApproved":true},
+
+  {"title":"Pourcentage 2","description":"Pourcentage","problemStatement":"Calculer 10% de 80","difficulty":"BEGINNER","topics":["Calcul"],"tags":["Pourcentages"],"solution":"8","hints":["10% = 0.1"],"steps":["0.1*80=8"],"responseTypes":["TEXT"],"estimatedTime":6,"points":15,"isPublished":true,"isApproved":true},
+
+  {"title":"Aire rectangle","description":"Aire (ajoute une photo de ton schema)","problemStatement":"Rectangle : L=8, l=5. Aire ?","difficulty":"BEGINNER","topics":["Geometrie"],"tags":["Aire","Pour debuter"],"solution":"40","hints":["Aire=L*l"],"steps":["8*5=40"],"responseTypes":["TEXT","IMAGE"],"estimatedTime":6,"points":15,"isPublished":true,"isApproved":true},
+
+  {"title":"Perimetre rectangle","description":"Perimetre (ajoute une photo de ton schema)","problemStatement":"Rectangle : L=8, l=5. Perimetre ?","difficulty":"BEGINNER","topics":["Geometrie"],"tags":["Perimetre","Pour debuter"],"solution":"26","hints":["P=2(L+l)"],"steps":["2*(8+5)=26"],"responseTypes":["TEXT","IMAGE"],"estimatedTime":6,"points":15,"isPublished":true,"isApproved":true},
+
+  {"title":"Aire triangle","description":"Aire triangle","problemStatement":"Triangle : base=10, hauteur=6. Aire ?","difficulty":"BEGINNER","topics":["Geometrie"],"tags":["Aire"],"solution":"30","hints":["A=(b*h)/2"],"steps":["(10*6)/2=30"],"responseTypes":["TEXT"],"estimatedTime":7,"points":15,"isPublished":true,"isApproved":true},
+
+  {"title":"Moyenne","description":"Statistiques (explique avec un audio)","problemStatement":"Moyenne de 10, 12, 8, 10 ?","difficulty":"BEGINNER","topics":["Statistiques"],"tags":["Moyenne"],"solution":"10","hints":["Somme / nombre"],"steps":["10+12+8+10=40","40/4=10"],"responseTypes":["TEXT","AUDIO"],"estimatedTime":7,"points":15,"isPublished":true,"isApproved":true},
+
+  {"title":"Systeme 1","description":"Systeme 2 equations","problemStatement":"Resoudre : x+y=7 et x-y=1","difficulty":"INTERMEDIATE","topics":["Algebre"],"tags":["Systemes","Recommandes"],"solution":"x=4, y=3","hints":["Additionner pour eliminer y"],"steps":["2x=8","x=4","y=3"],"responseTypes":["TEXT"],"estimatedTime":12,"points":25,"isPublished":true,"isApproved":true},
+
+  {"title":"Systeme 2","description":"Systeme 2 equations","problemStatement":"Resoudre : 2x+y=9 et x-y=1","difficulty":"INTERMEDIATE","topics":["Algebre"],"tags":["Systemes"],"solution":"x=10/3, y=17/3","hints":["Additionner apres ajustement"],"steps":["(2x+y)+(x-y)=9+1","3x=10","x=10/3","y=9-2x=9-20/3=7/3"],"responseTypes":["TEXT"],"estimatedTime":14,"points":25,"isPublished":true,"isApproved":true},
+
+  {"title":"Factorisation 1","description":"Mettre en facteur","problemStatement":"Factoriser : 3x + 6","difficulty":"INTERMEDIATE","topics":["Algebre"],"tags":["Factorisation"],"solution":"3(x+2)","hints":["Facteur commun 3"],"steps":["3x+6=3(x+2)"],"responseTypes":["TEXT"],"estimatedTime":8,"points":20,"isPublished":true,"isApproved":true},
+
+  {"title":"Pythagore 1","description":"Triangle rectangle (photo du schema)","problemStatement":"Triangle rectangle : a=3, b=4. Hypotenuse ?","difficulty":"INTERMEDIATE","topics":["Geometrie"],"tags":["Pythagore","Recommandes"],"solution":"5","hints":["c^2=a^2+b^2"],"steps":["c^2=9+16=25","c=5"],"responseTypes":["TEXT","IMAGE"],"estimatedTime":10,"points":25,"isPublished":true,"isApproved":true},
+
+  {"title":"Puissances 1","description":"Calcul de puissances","problemStatement":"Calculer : 2^5","difficulty":"INTERMEDIATE","topics":["Calcul"],"tags":["Puissances"],"solution":"32","hints":["2^5 = 2*2*2*2*2"],"steps":["2*2*2*2*2=32"],"responseTypes":["TEXT"],"estimatedTime":6,"points":15,"isPublished":true,"isApproved":true},
+
+  {"title":"Developpement","description":"Developper","problemStatement":"Developper : 2(x+3)","difficulty":"INTERMEDIATE","topics":["Algebre"],"tags":["Developpement"],"solution":"2x+6","hints":["Distribuer 2"],"steps":["2*x + 2*3","2x+6"],"responseTypes":["TEXT"],"estimatedTime":8,"points":20,"isPublished":true,"isApproved":true},
+
+  {"title":"Produit nul 1","description":"Equation factorisee","problemStatement":"Resoudre : (x-3)(x+2)=0","difficulty":"ADVANCED","topics":["Algebre"],"tags":["Equations","Defis"],"solution":"x=3 ou x=-2","hints":["Un facteur doit etre nul"],"steps":["x-3=0 => x=3","x+2=0 => x=-2"],"responseTypes":["TEXT"],"estimatedTime":10,"points":30,"isPublished":true,"isApproved":true},
+
+  {"title":"Quadratique 1","description":"Equation du second degre","problemStatement":"Resoudre : x^2 - 5x + 6 = 0","difficulty":"ADVANCED","topics":["Algebre"],"tags":["Equations","Defis"],"solution":"x=2 ou x=3","hints":["Factoriser"],"steps":["x^2-5x+6=(x-2)(x-3)","x=2 ou x=3"],"responseTypes":["TEXT"],"estimatedTime":14,"points":30,"isPublished":true,"isApproved":true},
+
+  {"title":"Inequation 1","description":"Inequation simple","problemStatement":"Resoudre : 3x - 6 > 0","difficulty":"ADVANCED","topics":["Algebre"],"tags":["Inequations"],"solution":"x > 2","hints":["Isoler x"],"steps":["3x>6","x>2"],"responseTypes":["TEXT"],"estimatedTime":10,"points":30,"isPublished":true,"isApproved":true},
+
+  {"title":"Probabilite 1","description":"Probabilite (explique en audio)","problemStatement":"De : 1,2,3,4,5,6. Probabilite d obtenir un nombre pair ?","difficulty":"ADVANCED","topics":["Probabilites"],"tags":["Probabilites"],"solution":"1/2","hints":["Pairs: 2,4,6"],"steps":["3 favorables / 6 possibles = 1/2"],"responseTypes":["TEXT","AUDIO"],"estimatedTime":10,"points":30,"isPublished":true,"isApproved":true}
+]

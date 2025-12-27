@@ -1,0 +1,11 @@
+{
+  "title": "Équation du second degré",
+  "description": "Résoudre x² + 5x + 6 = 0",
+  "difficulty": "INTERMEDIATE",
+  "problemStatement": "Trouver les racines de l'équation quadratique",
+  "solution": "x = -2 ou x = -3",
+  "topics": ["Algèbre", "Équations", "Polynômes"],
+  "tags": ["équation", "second degré", "factorisation"],
+  "estimatedTime": 10,
+  "points": 20
+}

@@ -1,0 +1,21 @@
+﻿version: '3.8'
+
+services:
+  ai-service:
+    build: .
+    container_name: neurotutor-ai
+    ports:
+      - "8082:8082"
+    environment:
+      - ENVIRONMENT=development
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - redis
+    networks:
+      - neurotutor-network
+    volumes:
+      - ./data:/app/data
+
+networks:
+  neurotutor-network:
+    external: true
