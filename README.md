@@ -201,7 +201,11 @@ Ce rapport présente une architecture complète et évolutive pour **NeuroTutor*
 ---
 
 Réalisé par : AICHA BARAHOU, HANA BENZIAT
+
+
 Année académique : 2025/2026
+
+
 Master : Didactique des Sciences et Ingénierie éducative - Option Technologies Émergentes en Éducation (TEE)
 
 
