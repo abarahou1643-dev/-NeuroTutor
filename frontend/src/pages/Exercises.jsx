@@ -1,19 +1,18 @@
 // src/pages/Exercises.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  ArrowLeft,
-  Search,
-  Filter,
-  Clock,
-  Star,
-  Play,
-  RefreshCw,
-} from "lucide-react";
+import { ArrowLeft, Search, Filter, Clock, Star, Play, RefreshCw } from "lucide-react";
 
-const API_BASE = "http://localhost:8083/api/v1";
-
+const API_BASE = "http://127.0.0.1:8083/api/v1";
 const levelOrder = { BEGINNER: 0, INTERMEDIATE: 1, ADVANCED: 2 };
+
+// ✅ unwrap backend formats: [] OR {value: []} OR {items: []}
+const unwrapList = (data) => {
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.value)) return data.value;
+  if (data && Array.isArray(data.items)) return data.items;
+  return [];
+};
 
 const Exercises = () => {
   const navigate = useNavigate();
@@ -51,12 +50,9 @@ const Exercises = () => {
     try {
       const token = localStorage.getItem("token");
 
-      // ✅ ton backend supporte déjà ?level=...
       const res = await fetch(
         `${API_BASE}/exercises?level=${encodeURIComponent(lvl)}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
 
       if (!res.ok) {
@@ -65,7 +61,9 @@ const Exercises = () => {
       }
 
       const data = await res.json();
-      setExercises(Array.isArray(data) ? data : []);
+      const list = unwrapList(data);
+
+      setExercises(list);
     } catch (e) {
       console.error(e);
       setError(e.message || "Erreur chargement exercices");
@@ -77,9 +75,7 @@ const Exercises = () => {
 
   const allTopics = useMemo(() => {
     const set = new Set();
-    exercises.forEach((e) => {
-      (e.topics || []).forEach((t) => set.add(t));
-    });
+    exercises.forEach((e) => (e.topics || []).forEach((t) => set.add(t)));
     return ["ALL", ...Array.from(set).sort((a, b) => a.localeCompare(b))];
   }, [exercises]);
 
@@ -87,7 +83,6 @@ const Exercises = () => {
     const q = query.trim().toLowerCase();
 
     return exercises.filter((e) => {
-      // Search
       const haystack = [
         e.title,
         e.description,
@@ -100,11 +95,8 @@ const Exercises = () => {
         .toLowerCase();
 
       if (q && !haystack.includes(q)) return false;
+      if (difficulty !== "ALL" && String(e.difficulty) !== difficulty) return false;
 
-      // Difficulty
-      if (difficulty !== "ALL" && e.difficulty !== difficulty) return false;
-
-      // Topic
       if (topic !== "ALL") {
         const topics = Array.isArray(e.topics) ? e.topics : [];
         if (!topics.includes(topic)) return false;
@@ -115,12 +107,8 @@ const Exercises = () => {
   }, [exercises, query, difficulty, topic]);
 
   const recommended = useMemo(() => {
-    // simple logique : exercices <= niveau user + 1
     const u = levelOrder[userLevel] ?? 0;
-    return exercises.filter((e) => {
-      const d = levelOrder[e.difficulty] ?? 0;
-      return d <= u + 1;
-    });
+    return exercises.filter((e) => (levelOrder[e.difficulty] ?? 0) <= u + 1);
   }, [exercises, userLevel]);
 
   const handleReset = () => {
@@ -137,7 +125,9 @@ const Exercises = () => {
   };
 
   const startExercise = (exercise) => {
-    navigate(`/exercise/${exercise.id}`, { state: { exercise } });
+    const id = exercise?.id || exercise?._id;
+    if (!id) return;
+    navigate(`/exercise/${id}`, { state: { exercise } });
   };
 
   if (loading) return <div className="p-6">Chargement...</div>;
@@ -145,10 +135,7 @@ const Exercises = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center text-indigo-600 mb-6"
-        >
+        <button onClick={() => navigate(-1)} className="flex items-center text-indigo-600 mb-6">
           <ArrowLeft className="h-4 w-4 mr-2" />
           Retour au tableau de bord
         </button>
@@ -169,10 +156,7 @@ const Exercises = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <button
-        onClick={() => navigate(-1)}
-        className="flex items-center text-indigo-600 mb-6"
-      >
+      <button onClick={() => navigate(-1)} className="flex items-center text-indigo-600 mb-6">
         <ArrowLeft className="h-4 w-4 mr-2" />
         Retour au tableau de bord
       </button>
@@ -180,9 +164,7 @@ const Exercises = () => {
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="bg-white border rounded-2xl p-6 mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">
-            Exercices Mathématiques
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900">Exercices Mathématiques</h1>
           <p className="text-gray-600 mt-1">
             Améliorez vos compétences avec des exercices adaptés à votre niveau
           </p>
@@ -192,46 +174,40 @@ const Exercises = () => {
             <span className="px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-sm font-semibold">
               {userLevel}
             </span>
+
+            <button
+              onClick={() => loadExercises(userLevel)}
+              className="ml-auto inline-flex items-center gap-2 px-3 py-2 rounded-xl border hover:bg-gray-50"
+              title="Actualiser"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Actualiser
+            </button>
           </div>
         </div>
 
         {/* Recommended */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-bold text-gray-900">
-              Recommandé pour vous
-            </h2>
-            <span className="text-sm text-gray-500">
-              {recommended.slice(0, 3).length} recommandé(s)
-            </span>
+            <h2 className="text-lg font-bold text-gray-900">Recommandé pour vous</h2>
+            <span className="text-sm text-gray-500">{recommended.slice(0, 3).length} recommandé(s)</span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {recommended.slice(0, 3).map((e) => (
-              <div
-                key={e.id}
-                className="bg-white border rounded-2xl p-5 shadow-sm hover:shadow-md transition"
-              >
+              <div key={e.id || e._id} className="bg-white border rounded-2xl p-5 shadow-sm hover:shadow-md transition">
                 <div className="flex items-start justify-between">
-                  <span
-                    className={`text-xs font-semibold px-3 py-1 rounded-full ${badgeDifficulty(
-                      e.difficulty
-                    )}`}
-                  >
+                  <span className={`text-xs font-semibold px-3 py-1 rounded-full ${badgeDifficulty(e.difficulty)}`}>
                     Recommandé
                   </span>
                   <div className="flex items-center gap-1 bg-amber-50 px-3 py-1 rounded-full">
                     <Star className="h-4 w-4 text-amber-600" />
-                    <span className="font-bold text-gray-900">
-                      {e.points ?? 0}
-                    </span>
+                    <span className="font-bold text-gray-900">{e.points ?? 0}</span>
                   </div>
                 </div>
 
                 <h3 className="mt-3 font-bold text-gray-900">{e.title}</h3>
-                <p className="text-sm text-gray-600 mt-1 line-clamp-2">
-                  {e.description}
-                </p>
+                <p className="text-sm text-gray-600 mt-1 line-clamp-2">{e.description}</p>
 
                 <button
                   onClick={() => startExercise(e)}
@@ -299,30 +275,19 @@ const Exercises = () => {
         {/* List */}
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-bold text-gray-900">Tous les exercices</h2>
-          <span className="text-sm text-gray-500">
-            {filtered.length} exercice(s) disponible(s)
-          </span>
+          <span className="text-sm text-gray-500">{filtered.length} exercice(s) disponible(s)</span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filtered.map((e) => (
-            <div
-              key={e.id}
-              className="bg-white border rounded-2xl p-5 shadow-sm hover:shadow-md transition"
-            >
+            <div key={e.id || e._id} className="bg-white border rounded-2xl p-5 shadow-sm hover:shadow-md transition">
               <div className="flex items-start justify-between">
                 <div>
                   <h3 className="font-bold text-gray-900">{e.title}</h3>
-                  <p className="text-sm text-gray-600 mt-1 line-clamp-2">
-                    {e.description}
-                  </p>
+                  <p className="text-sm text-gray-600 mt-1 line-clamp-2">{e.description}</p>
                 </div>
 
-                <span
-                  className={`text-xs font-semibold px-3 py-1 rounded-full ${badgeDifficulty(
-                    e.difficulty
-                  )}`}
-                >
+                <span className={`text-xs font-semibold px-3 py-1 rounded-full ${badgeDifficulty(e.difficulty)}`}>
                   {e.difficulty === "BEGINNER"
                     ? "Débutant"
                     : e.difficulty === "INTERMEDIATE"
@@ -337,10 +302,7 @@ const Exercises = () => {
 
               <div className="mt-3 flex flex-wrap gap-2">
                 {(e.topics || []).slice(0, 3).map((t, idx) => (
-                  <span
-                    key={idx}
-                    className="px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs"
-                  >
+                  <span key={idx} className="px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs">
                     {t}
                   </span>
                 ))}

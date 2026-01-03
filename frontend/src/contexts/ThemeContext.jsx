@@ -1,45 +1,55 @@
 // src/contexts/ThemeContext.jsx
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 
-const ThemeContext = createContext();
+const STORAGE_KEY = "neurotutor_theme";
+const ThemeContext = createContext(null);
 
 export const useTheme = () => {
-  const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider');
-  }
-  return context;
+  const ctx = useContext(ThemeContext);
+  if (!ctx) throw new Error("useTheme must be used within a ThemeProvider");
+  return ctx;
+};
+
+const getSystemTheme = () => {
+  if (typeof window === "undefined") return "light";
+  return window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ? "dark" : "light";
 };
 
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
-    const savedTheme = localStorage.getItem('neurotutor_theme');
-    return savedTheme || 'light';
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved || getSystemTheme();
   });
 
+  // ✅ applique la class "dark" + persiste
   useEffect(() => {
-    localStorage.setItem('neurotutor_theme', theme);
+    localStorage.setItem(STORAGE_KEY, theme);
 
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    const root = document.documentElement;
+    if (theme === "dark") root.classList.add("dark");
+    else root.classList.remove("dark");
   }, [theme]);
 
-  const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light');
-  };
+  // ✅ sync si l’utilisateur change le thème dans un autre onglet
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (e.key === STORAGE_KEY && e.newValue) setTheme(e.newValue);
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
 
-  const value = {
-    theme,
-    toggleTheme,
-    isDark: theme === 'dark'
-  };
+  const toggleTheme = () => setTheme((prev) => (prev === "light" ? "dark" : "light"));
 
-  return (
-    <ThemeContext.Provider value={value}>
-      {children}
-    </ThemeContext.Provider>
+  const value = useMemo(
+    () => ({
+      theme,
+      toggleTheme,
+      isDark: theme === "dark",
+      setTheme, // utile si tu veux un bouton "clair/sombre" direct
+    }),
+    [theme]
   );
+
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 };

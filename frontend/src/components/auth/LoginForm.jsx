@@ -1,55 +1,40 @@
-// components/auth/LoginForm.jsx
-import React, { useState } from 'react';
-import { Mail, Lock, LogIn } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import React, { useState } from "react";
+import { Mail, Lock, LogIn } from "lucide-react";
+import { useAuth } from "../../contexts/AuthContext";
 
 const LoginForm = ({ onSuccess }) => {
   const { login } = useAuth();
+
   const [formData, setFormData] = useState({
-    email: '',
-    password: ''
+    email: "",
+    password: ""
   });
+
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       [e.target.name]: e.target.value
-    });
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
-      const response = await fetch('http://localhost:8080/api/v1/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData)
-      });
+      const result = await login(formData.email, formData.password);
 
-      if (response.ok) {
-        const data = await response.json();
-        login({
-          id: data.userId,
-          email: data.email,
-          firstName: data.firstName,
-          lastName: data.lastName,
-          role: data.role
-        }, data.token);
-
+      if (result.success) {
         if (onSuccess) onSuccess();
       } else {
-        const errorData = await response.json();
-        setError(errorData.message || 'Email ou mot de passe incorrect');
+        setError(result.error || "Email ou mot de passe incorrect");
       }
-    } catch (error) {
-      setError('Erreur de connexion au serveur');
+    } catch (err) {
+      setError("Erreur de connexion au serveur");
     } finally {
       setLoading(false);
     }
@@ -57,7 +42,7 @@ const LoginForm = ({ onSuccess }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Email */}
+      {/* EMAIL */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           <div className="flex items-center gap-2">
@@ -71,12 +56,12 @@ const LoginForm = ({ onSuccess }) => {
           value={formData.email}
           onChange={handleChange}
           required
-          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
           placeholder="exemple@neurotutor.com"
         />
       </div>
 
-      {/* Password */}
+      {/* PASSWORD */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           <div className="flex items-center gap-2">
@@ -90,22 +75,23 @@ const LoginForm = ({ onSuccess }) => {
           value={formData.password}
           onChange={handleChange}
           required
-          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
           placeholder="Votre mot de passe"
         />
       </div>
 
+      {/* ERROR */}
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
           ❌ {error}
         </div>
       )}
 
-      {/* Submit Button */}
+      {/* SUBMIT */}
       <button
         type="submit"
         disabled={loading}
-        className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-medium hover:opacity-90 transition disabled:opacity-50 flex items-center justify-center gap-2"
+        className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-medium hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
       >
         {loading ? (
           <>

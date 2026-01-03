@@ -22,38 +22,26 @@ public class ExerciseService {
         this.exerciseRepository = exerciseRepository;
     }
 
-    // ✅ GET all (avec filtre niveau)
     public List<Exercise> getAllExercises(String userLevel) {
-        System.out.println("Getting exercises for user level: " + userLevel);
-
         List<Exercise> allExercises = exerciseRepository.findAll();
 
-        if (userLevel == null || userLevel.isBlank()) {
-            System.out.println("No user level specified, returning all " + allExercises.size() + " exercises");
-            return allExercises;
-        }
+        if (userLevel == null || userLevel.isBlank()) return allExercises;
 
         UserLevel userLevelEnum = UserLevel.fromString(userLevel);
 
-        List<Exercise> filteredExercises = allExercises.stream()
+        return allExercises.stream()
                 .filter(exercise -> {
                     try {
                         UserLevel exerciseLevel = UserLevel.fromString(exercise.getDifficulty());
                         return userLevelEnum.canAccess(exerciseLevel);
                     } catch (Exception e) {
-                        System.err.println("Error checking exercise access for level "
-                                + exercise.getDifficulty() + ": " + e.getMessage());
                         return true;
                     }
                 })
                 .collect(Collectors.toList());
-
-        System.out.println("Found " + filteredExercises.size() + " accessible exercises out of " + allExercises.size());
-        return filteredExercises;
     }
 
     public Optional<Exercise> getExerciseById(String id) {
-        System.out.println("Getting exercise by ID: " + id);
         return exerciseRepository.findById(id);
     }
 
@@ -62,13 +50,11 @@ public class ExerciseService {
                 .orElseThrow(() -> new IllegalArgumentException("Exercise not found: " + id));
     }
 
-    // ✅ CREATE 1
     public Exercise createExercise(Exercise exercise) {
         if (exercise == null) throw new IllegalArgumentException("Exercise body is required");
         if (exercise.getTitle() == null || exercise.getTitle().trim().isEmpty())
             throw new IllegalArgumentException("Title is required");
 
-        // defaults
         if (exercise.getDifficulty() == null || exercise.getDifficulty().trim().isEmpty())
             exercise.setDifficulty("BEGINNER");
 
@@ -77,12 +63,23 @@ public class ExerciseService {
         if (exercise.getHints() == null) exercise.setHints(new ArrayList<>());
         if (exercise.getSteps() == null) exercise.setSteps(new ArrayList<>());
 
-        // ✅ responseTypes default
         if (exercise.getResponseTypes() == null || exercise.getResponseTypes().isEmpty()) {
             exercise.setResponseTypes(List.of("TEXT"));
         }
 
-        // Mongo id auto
+        if (exercise.getExplanationText() == null) exercise.setExplanationText("");
+
+        // ✅ defaults NEW fields
+        if (exercise.getStepsRequired() == null) exercise.setStepsRequired(false);
+        if (exercise.getCorrectionMode() == null || exercise.getCorrectionMode().isBlank())
+            exercise.setCorrectionMode("AUTO");
+
+        if (exercise.getAllowImage() == null)
+            exercise.setAllowImage(exercise.getResponseTypes().contains("IMAGE"));
+
+        if (exercise.getAllowAudio() == null)
+            exercise.setAllowAudio(exercise.getResponseTypes().contains("AUDIO"));
+
         exercise.setId(null);
 
         LocalDateTime now = LocalDateTime.now();
@@ -98,7 +95,45 @@ public class ExerciseService {
         return exerciseRepository.save(exercise);
     }
 
-    // ✅ BULK CREATE
+    public Exercise updateExercise(String id, Exercise patch) {
+        Exercise ex = getExerciseByIdOrThrow(id);
+
+        if (patch.getTitle() != null) ex.setTitle(patch.getTitle());
+        if (patch.getDescription() != null) ex.setDescription(patch.getDescription());
+        if (patch.getProblemStatement() != null) ex.setProblemStatement(patch.getProblemStatement());
+
+        if (patch.getDifficulty() != null) ex.setDifficulty(patch.getDifficulty());
+        if (patch.getTopics() != null) ex.setTopics(patch.getTopics());
+        if (patch.getTags() != null) ex.setTags(patch.getTags());
+
+        if (patch.getSolution() != null) ex.setSolution(patch.getSolution());
+        if (patch.getHints() != null) ex.setHints(patch.getHints());
+        if (patch.getSteps() != null) ex.setSteps(patch.getSteps());
+
+        if (patch.getResponseTypes() != null) ex.setResponseTypes(patch.getResponseTypes());
+        if (patch.getEstimatedTime() != null) ex.setEstimatedTime(patch.getEstimatedTime());
+        if (patch.getPoints() != null) ex.setPoints(patch.getPoints());
+
+        if (patch.getIsPublished() != null) ex.setIsPublished(patch.getIsPublished());
+        if (patch.getIsApproved() != null) ex.setIsApproved(patch.getIsApproved());
+
+        if (patch.getExplanationText() != null) ex.setExplanationText(patch.getExplanationText());
+
+        // ✅ update NEW fields
+        if (patch.getStepsRequired() != null) ex.setStepsRequired(patch.getStepsRequired());
+        if (patch.getCorrectionMode() != null) ex.setCorrectionMode(patch.getCorrectionMode());
+        if (patch.getAllowImage() != null) ex.setAllowImage(patch.getAllowImage());
+        if (patch.getAllowAudio() != null) ex.setAllowAudio(patch.getAllowAudio());
+
+        ex.setUpdatedAt(LocalDateTime.now());
+        return exerciseRepository.save(ex);
+    }
+
+    public void deleteExercise(String id) {
+        Exercise ex = getExerciseByIdOrThrow(id);
+        exerciseRepository.delete(ex);
+    }
+
     public List<Exercise> bulkCreate(List<Exercise> exercises) {
         if (exercises == null || exercises.isEmpty()) {
             throw new IllegalArgumentException("Exercises list is required");
@@ -122,10 +157,21 @@ public class ExerciseService {
             if (ex.getHints() == null) ex.setHints(new ArrayList<>());
             if (ex.getSteps() == null) ex.setSteps(new ArrayList<>());
 
-            // ✅ default responseTypes
             if (ex.getResponseTypes() == null || ex.getResponseTypes().isEmpty()) {
                 ex.setResponseTypes(List.of("TEXT"));
             }
+
+            if (ex.getExplanationText() == null) ex.setExplanationText("");
+
+            if (ex.getStepsRequired() == null) ex.setStepsRequired(false);
+            if (ex.getCorrectionMode() == null || ex.getCorrectionMode().isBlank())
+                ex.setCorrectionMode("AUTO");
+
+            if (ex.getAllowImage() == null)
+                ex.setAllowImage(ex.getResponseTypes().contains("IMAGE"));
+
+            if (ex.getAllowAudio() == null)
+                ex.setAllowAudio(ex.getResponseTypes().contains("AUDIO"));
 
             ex.setId(null);
 

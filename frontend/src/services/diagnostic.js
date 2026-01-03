@@ -1,87 +1,69 @@
 // src/services/diagnostic.js
-const API_BASE = 'http://localhost:8083/api/v1/diagnostic';
+const API_BASE = "/exo/api/v1/diagnostic";
 
 export const diagnosticService = {
-  // Démarrer un test diagnostique
   async startDiagnostic(studentId) {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/start`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ studentId })
-      });
+    const token = localStorage.getItem("token");
 
-      if (!response.ok) {
-        throw new Error(`Erreur ${response.status}: ${response.statusText}`);
-      }
+    const response = await fetch(`${API_BASE}/start`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ studentId }),
+    });
 
-      return await response.json();
-    } catch (error) {
-      console.error('Erreur démarrage test diagnostique:', error);
-      throw error;
+    if (!response.ok) {
+      throw new Error(`Erreur ${response.status}: ${await response.text()}`);
     }
+
+    return await response.json();
   },
 
-  // Soumettre les réponses
   async submitDiagnostic(testId, studentId, answers) {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/submit/${testId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ studentId, answers })
-      });
+    const token = localStorage.getItem("token");
 
-      if (!response.ok) {
-        throw new Error(`Erreur ${response.status}: ${response.statusText}`);
-      }
+    const response = await fetch(`${API_BASE}/submit/${testId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ studentId, answers }),
+    });
 
-      return await response.json();
-    } catch (error) {
-      console.error('Erreur soumission test:', error);
-      throw error;
+    if (!response.ok) {
+      throw new Error(`Erreur ${response.status}: ${await response.text()}`);
     }
+
+    return await response.json();
   },
 
-  // Récupérer le résultat
   async getDiagnosticResult(studentId) {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/result/${studentId}`, {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+      `${API_BASE}/result/${encodeURIComponent(studentId)}`,
+      {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.status === 404) {
-        return null; // Pas encore de test
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
       }
+    );
 
-      if (!response.ok) {
-        throw new Error(`Erreur ${response.status}: ${response.statusText}`);
-      }
+    if (response.status === 404) return null;
+    if (!response.ok) return null;
 
-      return await response.json();
-    } catch (error) {
-      console.error('Erreur récupération résultat:', error);
-      return null;
-    }
+    return await response.json();
   },
 
-  // Vérifier la santé du service
   async checkHealth() {
     try {
       const response = await fetch(`${API_BASE}/health`);
       return response.ok;
-    } catch (error) {
+    } catch {
       return false;
     }
-  }
+  },
 };

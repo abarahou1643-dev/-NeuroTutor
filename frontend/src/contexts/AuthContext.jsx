@@ -1,112 +1,161 @@
-// frontend/src/contexts/AuthContext.jsx
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+// src/contexts/AuthContext.jsx
+import React, { createContext, useContext, useEffect, useState } from "react";
 
 const AuthContext = createContext(null);
 
+// ✅ IMPORTANT : utiliser le proxy Vite
+// Appels => /api/v1/auth/... (et proxy /api -> http://localhost:8081)
+const AUTH_BASE = "/api/v1/auth";
+
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null); // { firstName, lastName, role, level, diagnosticCompleted, diagnosticScore, ... }
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  const token = useMemo(() => localStorage.getItem("token"), []);
+  const saveUser = (u) => {
+    if (!u) return;
+    setUser(u);
+    setIsAuthenticated(true);
+    localStorage.setItem("user", JSON.stringify(u));
+  };
 
-  const isAuthenticated = useMemo(() => {
-    return !!localStorage.getItem("token");
-  }, [user]); // recalcul quand user change
-
-  const logout = () => {
+  const clearAuth = () => {
+    setUser(null);
+    setIsAuthenticated(false);
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    setUser(null);
+    localStorage.removeItem("userLevel");
+    localStorage.removeItem("diagnosticResult");
   };
 
   const refreshMe = async () => {
-    const t = localStorage.getItem("token");
-    if (!t) {
-      setUser(null);
+    const token = localStorage.getItem("token");
+    if (!token) {
+      clearAuth();
       return null;
     }
 
     try {
-      const res = await fetch("http://localhost:8080/api/v1/auth/me", {
-        headers: {
-          Authorization: `Bearer ${t}`,
-          "Content-Type": "application/json",
-        },
+      const res = await fetch(`${AUTH_BASE}/me`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!res.ok) {
-        // token expiré ou invalide
-        logout();
+        console.warn("⚠️ /me failed:", res.status);
         return null;
       }
 
       const data = await res.json();
-      localStorage.setItem("user", JSON.stringify(data));
-      setUser(data);
-      return data;
+
+      const normalizedUser = {
+        id: data.userId ?? data.id,
+        userId: data.userId ?? data.id,
+        email: data.email,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        role: String(data.role || "").replace("ROLE_", ""),
+        diagnosticCompleted: data.diagnosticCompleted ?? false,
+        level: data.level ?? null,
+      };
+
+      saveUser(normalizedUser);
+      return normalizedUser;
     } catch (e) {
-      console.error("refreshMe error:", e);
+      console.error("❌ refreshMe error:", e);
       return null;
     }
   };
 
-  // login helper (si tu veux l’utiliser depuis LoginForm)
   const login = async (email, password) => {
     try {
-      const res = await fetch("http://localhost:8080/api/v1/auth/login", {
+      const res = await fetch(`${AUTH_BASE}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
       if (!res.ok) {
-        const msg = await res.text();
+        const text = await res.text();
+        let msg = text;
+        try {
+          const j = JSON.parse(text);
+          msg = j.message || text;
+        } catch {}
         throw new Error(msg || "Login failed");
       }
 
-      const data = await res.json(); // { token, refreshToken, ...}
-      if (!data?.token) throw new Error("Token manquant dans la réponse");
+      const data = await res.json();
+
+      if (!data?.token) throw new Error("Token manquant dans la réponse login");
 
       localStorage.setItem("token", data.token);
 
-      // après login -> récupérer /me pour user complet
-      await refreshMe();
+      const me = await refreshMe();
+
+      if (!me) {
+        // fallback si /me échoue
+        const fallbackUser = {
+          id: data.userId ?? data.id,
+          userId: data.userId ?? data.id,
+          email: data.email,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          role: String(data.role || "").replace("ROLE_", ""),
+          diagnosticCompleted: data.diagnosticCompleted ?? false,
+        };
+        saveUser(fallbackUser);
+      }
 
       return { success: true };
     } catch (e) {
+      clearAuth();
       return { success: false, error: e.message };
     }
   };
 
-  // init au démarrage : lire localStorage puis refresh /me
-  useEffect(() => {
-    const userStr = localStorage.getItem("user");
-    if (userStr) {
-      try {
-        setUser(JSON.parse(userStr));
-      } catch {
-        // ignore
-      }
-    }
+  const logout = () => {
+    clearAuth();
+    window.location.href = "/login";
+  };
 
-    (async () => {
-      await refreshMe();
+  useEffect(() => {
+    const init = async () => {
+      const token = localStorage.getItem("token");
+      const storedUser = localStorage.getItem("user");
+
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      const me = await refreshMe();
+
+      if (!me && storedUser) {
+        try {
+          const parsed = JSON.parse(storedUser);
+          setUser(parsed);
+          setIsAuthenticated(true);
+        } catch {
+          clearAuth();
+        }
+      }
+
       setLoading(false);
-    })();
+    };
+
+    init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const value = {
-    user,
-    setUser,
-    loading,
-    isAuthenticated,
-    login,
-    logout,
-    refreshMe,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, loading, isAuthenticated, login, logout, refreshMe }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used inside AuthProvider");
+  return ctx;
+};

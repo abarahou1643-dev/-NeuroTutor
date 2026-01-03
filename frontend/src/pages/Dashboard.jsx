@@ -1,6 +1,7 @@
 // src/pages/Dashboard.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 import {
   Brain,
   BookOpen,
@@ -15,7 +16,6 @@ import {
   Zap,
   Sparkles,
   Rocket,
-  Timer,
   Crown,
   TargetIcon,
   BrainCircuit,
@@ -23,13 +23,14 @@ import {
   XCircle,
 } from "lucide-react";
 
-const EXERCISE_API = "http://localhost:8083/api/v1";
+const EXERCISE_API = "http://127.0.0.1:8083/api/v1";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [user, setUser] = useState(null);
+  const { user, loading: authLoading, logout /*, refreshMe */ } = useAuth();
+
   const [userLevel, setUserLevel] = useState("BEGINNER");
   const [diagnosticResult, setDiagnosticResult] = useState(null);
 
@@ -40,62 +41,77 @@ const Dashboard = () => {
   const [showDiagnosticResult, setShowDiagnosticResult] = useState(false);
   const [activeTab, setActiveTab] = useState("recommended");
 
+  // ✅ Redirect si pas connecté (quand auth finit)
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    const token = localStorage.getItem("token");
+    if (authLoading) return;
 
-    if (!storedUser || !token) {
-      navigate("/login");
+    if (!user) {
+      navigate("/login", { replace: true });
       return;
     }
 
-    const parsedUser = JSON.parse(storedUser);
-    setUser(parsedUser);
+    // ✅ IMPORTANT : évite d'appeler refreshMe ici (ça peut boucler)
+    // Si tu veux le faire, fais-le 1 seule fois ailleurs (ex: App init)
+  }, [authLoading, user?.id, navigate, user]);
 
+  // ✅ Init level + diagnostic UNE SEULE FOIS
+  useEffect(() => {
     const level = localStorage.getItem("userLevel") || "BEGINNER";
     setUserLevel(level);
 
     const diagnostic = localStorage.getItem("diagnosticResult");
-    if (diagnostic) setDiagnosticResult(JSON.parse(diagnostic));
+    if (diagnostic) {
+      try {
+        setDiagnosticResult(JSON.parse(diagnostic));
+      } catch {
+        setDiagnosticResult(null);
+      }
+    }
+  }, []);
 
+  // ✅ Popup diagnostic seulement si navigation state le demande
+  useEffect(() => {
     if (location.state?.diagnosticCompleted) {
       setShowDiagnosticResult(true);
-      setTimeout(() => setShowDiagnosticResult(false), 5000);
+      const t = setTimeout(() => setShowDiagnosticResult(false), 5000);
+      return () => clearTimeout(t);
     }
+  }, [location.state?.diagnosticCompleted]);
 
-    loadData(parsedUser, level);
+  // ✅ Chargement des données: UNIQUEMENT quand userId OU userLevel changent
+  useEffect(() => {
+    if (!user) return;
+
+    const userId = user.userId || user.id || user.email;
+    if (!userId) return;
+
+    loadData({ userId }, userLevel);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navigate, location]);
+  }, [user?.userId, user?.id, user?.email, userLevel]);
 
-  const loadData = async (parsedUser, level) => {
+  const loadData = async ({ userId }, level) => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
+      if (!token) throw new Error("Token manquant");
 
-      // ✅ IMPORTANT : on force userId = email (car tes submissions utilisent email)
-      const userId = parsedUser?.email || "test@neurotutor.com";
       console.log("Dashboard userId used:", userId);
 
-      // 1) Charger exercices selon le niveau
+      // 1) Exercices par niveau
       const exRes = await fetch(
         `${EXERCISE_API}/exercises?level=${encodeURIComponent(level)}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       if (!exRes.ok) throw new Error("Erreur chargement exercices");
       const exData = await exRes.json();
       setExercises(Array.isArray(exData) ? exData : []);
 
-      // 2) Charger submissions de l’utilisateur
+      // 2) Submissions user
       const subRes = await fetch(
         `${EXERCISE_API}/submissions/user/${encodeURIComponent(userId)}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // si aucun historique -> backend peut renvoyer [] ou 404 selon ton code
       if (subRes.status === 404) {
         setSubmissions([]);
       } else {
@@ -105,7 +121,6 @@ const Dashboard = () => {
       }
     } catch (err) {
       console.error(err);
-      // on garde l’app vivante même si une partie échoue
       setExercises([]);
       setSubmissions([]);
     } finally {
@@ -118,7 +133,7 @@ const Dashboard = () => {
   };
 
   const handleLogout = () => {
-    localStorage.clear();
+    logout?.();
     navigate("/login");
   };
 
@@ -148,7 +163,7 @@ const Dashboard = () => {
     }
   };
 
-  // ✅ map exerciseId -> title
+  // ✅ map id -> title (avec fallback)
   const exerciseTitleById = useMemo(() => {
     const map = {};
     (exercises || []).forEach((e) => {
@@ -157,7 +172,6 @@ const Dashboard = () => {
     return map;
   }, [exercises]);
 
-  // ✅ Stats calculées à partir de submissions
   const stats = useMemo(() => {
     const total = submissions.length;
     const corrects = submissions.filter((s) => s.correct === true).length;
@@ -166,26 +180,17 @@ const Dashboard = () => {
     const successRate = total > 0 ? Math.round((corrects / total) * 100) : 0;
     const avgPoints = total > 0 ? Math.round(points / total) : 0;
 
-    return {
-      total,
-      corrects,
-      points,
-      successRate,
-      avgPoints,
-    };
+    return { total, corrects, points, successRate, avgPoints };
   }, [submissions]);
 
-  // derniers essais (5)
-  const recent = useMemo(() => {
-    return (submissions || []).slice(0, 5);
-  }, [submissions]);
+  const recent = useMemo(() => (submissions || []).slice(0, 5), [submissions]);
+  const recommendedExercises = useMemo(
+    () => (exercises || []).slice(0, 6),
+    [exercises]
+  );
 
-  const recommendedExercises = useMemo(() => {
-    // tu peux améliorer la logique de recommandation ensuite
-    return (exercises || []).slice(0, 6);
-  }, [exercises]);
-
-  if (loading) {
+  // ✅ loading global
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50 flex items-center justify-center">
         <div className="text-center">
@@ -206,7 +211,7 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-indigo-50">
-      {/* Notification de résultat diagnostique */}
+      {/* Notification diagnostic */}
       {showDiagnosticResult && diagnosticResult && (
         <div className="fixed top-4 right-4 z-50 animate-slide-in">
           <div className="bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-2xl shadow-2xl p-4 max-w-sm backdrop-blur-sm border border-emerald-400/30">
@@ -384,7 +389,9 @@ const Dashboard = () => {
             <h3 className="text-gray-700 font-medium mb-1">
               Exercices complétés
             </h3>
-            <p className="text-sm text-gray-500">Total tentatives enregistrées</p>
+            <p className="text-sm text-gray-500">
+              Total tentatives enregistrées
+            </p>
           </div>
 
           <div className="bg-white rounded-2xl p-6 shadow border">
@@ -446,10 +453,11 @@ const Dashboard = () => {
                 >
                   <div>
                     <p className="font-semibold text-gray-900">
-                      {exerciseTitleById[s.exerciseId] || s.exerciseId}
+                      {exerciseTitleById[s.exerciseId] ||
+                        `Exercice #${s.exerciseId}`}
                     </p>
                     <p className="text-sm text-gray-600">
-                      Réponse: <b>{s.answer}</b> • Points:{" "}
+                      Réponse: <b>{String(s.answer ?? "")}</b> • Points:{" "}
                       <b>{s.scoreEarned || 0}</b>
                     </p>
                   </div>
@@ -464,9 +472,7 @@ const Dashboard = () => {
                     ) : (
                       <>
                         <XCircle className="h-5 w-5 text-rose-600" />
-                        <span className="text-rose-700 font-medium">
-                          Faux
-                        </span>
+                        <span className="text-rose-700 font-medium">Faux</span>
                       </>
                     )}
                   </div>
@@ -484,9 +490,7 @@ const Dashboard = () => {
                 <Zap className="h-6 w-6 text-amber-500" />
                 Exercices recommandés
               </h2>
-              <p className="text-gray-600 mt-1">
-                Sélectionnés spécialement pour votre niveau
-              </p>
+              <p className="text-gray-600 mt-1">Sélectionnés pour votre niveau</p>
             </div>
 
             <div className="flex gap-2 bg-gray-100 p-1 rounded-xl">
@@ -541,9 +545,7 @@ const Dashboard = () => {
                   </div>
                   <div className="flex items-center gap-1">
                     <Award className="h-4 w-4" />
-                    <span className="font-medium">
-                      {exercise.points || 0} pts
-                    </span>
+                    <span className="font-medium">{exercise.points || 0} pts</span>
                   </div>
                 </div>
 
@@ -570,7 +572,11 @@ const Dashboard = () => {
             {[
               { icon: "🏆", label: "Premier exercice", locked: stats.total < 1 },
               { icon: "🚀", label: "Série de 5", locked: stats.total < 5 },
-              { icon: "⭐", label: "Score parfait", locked: stats.successRate < 100 || stats.total < 3 },
+              {
+                icon: "⭐",
+                label: "Score parfait",
+                locked: stats.successRate < 100 || stats.total < 3,
+              },
               { icon: "📚", label: "10 exercices", locked: stats.total < 10 },
               { icon: "⚡", label: "Rapide", locked: true },
               { icon: "🎯", label: "Précis", locked: stats.successRate < 80 },
@@ -615,7 +621,9 @@ const Dashboard = () => {
             </div>
 
             <div className="text-center md:text-right">
-              <p className="text-slate-400">© 2024 NeuroTutor. Tous droits réservés.</p>
+              <p className="text-slate-400">
+                © 2024 NeuroTutor. Tous droits réservés.
+              </p>
               <p className="text-sm text-slate-500 mt-1">
                 Connecté en tant que {user.email} • Niveau: {userLevel}
               </p>

@@ -4,6 +4,9 @@ import LoadingSpinner from "../components/common/LoadingSpinner";
 import ErrorAlert from "../components/common/ErrorAlert";
 import { useAuth } from "../contexts/AuthContext";
 
+const DIAG_API = "http://127.0.0.1:8083/api/v1";
+const AUTH_API = "/api/api/v1";
+
 const DiagnosticTest = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -37,13 +40,7 @@ const DiagnosticTest = () => {
     }
   }, [authLoading, isAuthenticated, navigate]);
 
-  // 2) Si diagnostic déjà fait et pas retake => montrer un écran (pas page blanche)
-  useEffect(() => {
-    // On ne redirige plus automatiquement : on affiche un écran "déjà fait"
-    // (sinon tu ne peux jamais refaire).
-  }, []);
-
-  // 3) Démarrage automatique si possible (sauf si diagnostic déjà fait ET pas retake)
+  // 2) Démarrage automatique
   useEffect(() => {
     const run = async () => {
       setError("");
@@ -59,15 +56,16 @@ const DiagnosticTest = () => {
         return;
       }
 
-      // Si diagnostic terminé et pas retake -> ne pas démarrer (on affichera l'écran)
-      if (user.role === "STUDENT" && user.diagnosticCompleted === true && !allowRetake) {
+      // ✅ Si diagnostic terminé et pas retake -> ne pas démarrer
+      const role = String(user.role || "").toUpperCase().replace("ROLE_", "");
+      if (role === "STUDENT" && user.diagnosticCompleted === true && !allowRetake) {
         setLoading(false);
         return;
       }
 
       if (!studentId) {
         setError(
-          "Impossible d’identifier l’utilisateur (studentId). Assure-toi que /auth/me renvoie userId ou email."
+          "Impossible d’identifier l’utilisateur (studentId). Vérifie que /auth/me renvoie userId ou email."
         );
         setLoading(false);
         return;
@@ -90,7 +88,7 @@ const DiagnosticTest = () => {
     try {
       const token = localStorage.getItem("token");
 
-      const res = await fetch("http://localhost:8083/api/v1/diagnostic/start", {
+      const res = await fetch(`${DIAG_API}/diagnostic/start`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -144,13 +142,16 @@ const DiagnosticTest = () => {
 
     try {
       const token = localStorage.getItem("token");
+      if (!token) throw new Error("Token manquant (non connecté)");
+
       const sid = test.studentId || studentId;
 
-      const res = await fetch(`http://localhost:8083/api/v1/diagnostic/submit/${test.id}`, {
+      // 1) submit diagnostic (ai-service / diagnostic service)
+      const res = await fetch(`${DIAG_API}/diagnostic/submit/${test.id}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ studentId: sid, answers }),
       });
@@ -163,11 +164,12 @@ const DiagnosticTest = () => {
       const diagResult = await res.json();
       setResult(diagResult);
 
+      // ✅ score 0..1 -> % integer
       const scorePct = Math.round((diagResult?.score || 0) * 100);
       const level = diagResult?.levelRecommendation || "BEGINNER";
 
-      // 🔥 Indispensable: enregistrer côté auth-service :contentReference[oaicite:2]{index=2}
-      const saveRes = await fetch("http://localhost:8080/api/v1/auth/diagnostic/complete", {
+      // 2) enregistrer côté auth-service ✅ PORT 8081
+      const saveRes = await fetch(`${AUTH_API}/auth/diagnostic/complete`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -182,7 +184,7 @@ const DiagnosticTest = () => {
       }
 
       await refreshMe();
-      navigate("/dashboard", { replace: true });
+      navigate("/dashboard", { replace: true, state: { diagnosticCompleted: true } });
     } catch (e) {
       console.error(e);
       setError(e.message || "Erreur lors de la soumission du diagnostic");
@@ -195,7 +197,8 @@ const DiagnosticTest = () => {
   if (authLoading || loading) return <LoadingSpinner text="Chargement du diagnostic..." />;
 
   // ✅ Écran "déjà fait" (et bouton retake)
-  if (user?.role === "STUDENT" && user?.diagnosticCompleted === true && !allowRetake) {
+  const role = String(user?.role || "").toUpperCase().replace("ROLE_", "");
+  if (role === "STUDENT" && user?.diagnosticCompleted === true && !allowRetake) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 max-w-xl w-full">
@@ -246,7 +249,8 @@ const DiagnosticTest = () => {
             Score : <span className="font-bold">{scorePct}%</span>
           </p>
           <p className="text-gray-700 mb-4">
-            Niveau recommandé : <span className="font-bold">{result.levelRecommendation}</span>
+            Niveau recommandé :{" "}
+            <span className="font-bold">{result.levelRecommendation || "BEGINNER"}</span>
           </p>
 
           <button

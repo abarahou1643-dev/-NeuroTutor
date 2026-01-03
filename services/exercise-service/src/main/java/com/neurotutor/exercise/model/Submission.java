@@ -1,10 +1,14 @@
 package com.neurotutor.exercise.model;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Document(collection = "submissions")
 @Data
@@ -16,12 +20,36 @@ public class Submission {
     @Id
     private String id;
 
+    // 🔑 Utilisateur
     private String userId;
+
+    // 📘 Exercice concerné
     private String exerciseId;
 
-    private String answer;      // réponse donnée par l'étudiant
-    private boolean correct;    // vrai/faux
+    // ✅ Réponse finale (texte)
+    private String answer;
 
-    private int scoreEarned;    // ex: points si correct sinon 0
+    // ✅ NEW: étapes envoyées par l’élève
+    private List<String> steps;
+
+    // ✅ NEW: finalAnswer explicite (si fourni)
+    private String finalAnswer;
+
+    // ✅ Résultat global (sur la réponse finale)
+    private boolean correct;
+
+    // ⭐ Points gagnés
+    private int scoreEarned;
+
+    // 🕒 Date de soumission
     private LocalDateTime submittedAt;
+
+    // 🖼️ Image explicative (optionnelle)
+    private String imageUrl;
+
+    // 🎤 Audio explicatif (optionnel)
+    private String audioUrl;
+
+    // ✅ NEW: score IA global (optionnel)
+    private Double aiGlobalScore;
 }

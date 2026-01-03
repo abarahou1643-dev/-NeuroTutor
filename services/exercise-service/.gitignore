@@ -31,3 +31,18 @@ build/
 
 ### VS Code ###
 .vscode/
+### ENV / Secrets ###
+.env
+**/.env
+
+### Python cache ###
+__pycache__/
+**/__pycache__/
+*.pyc
+
+### Runtime uploads ###
+services/exercise-service/uploads/
+
+### Local / test ###
+payload.json
+-Uri

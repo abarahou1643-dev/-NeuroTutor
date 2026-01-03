@@ -10,8 +10,10 @@ import com.neurotutor.auth.repository.UserRepository;
 import com.neurotutor.auth.service.DiagnosticService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -24,6 +26,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
+@CrossOrigin(origins = {"http://localhost:5174", "http://127.0.0.1:5174"})
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
@@ -33,9 +36,10 @@ public class AuthController {
     private final DiagnosticService diagnosticService;
 
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new RuntimeException("Email déjà utilisé");
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("message", "Email déjà utilisé"));
         }
 
         var user = User.builder()
@@ -46,7 +50,7 @@ public class AuthController {
                 .role(request.getRole() != null ? request.getRole() : User.UserRole.STUDENT)
                 .createdAt(LocalDateTime.now())
                 .enabled(true)
-                .diagnosticCompleted(false) // ✅ par défaut
+                .diagnosticCompleted(false)
                 .build();
 
         var savedUser = userRepository.save(user);
@@ -68,26 +72,39 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> authenticate(@Valid @RequestBody AuthRequest request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getEmail(),
-                        request.getPassword()
-                )
-        );
+    public ResponseEntity<?> authenticate(@Valid @RequestBody AuthRequest request) {
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.getEmail(),
+                            request.getPassword()
+                    )
+            );
+        } catch (BadCredentialsException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Email ou mot de passe incorrect"));
+        } catch (Exception e) {
+            // si un autre problème arrive (DB, provider, etc.)
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Erreur serveur durant l'authentification"));
+        }
 
         var user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+                .orElse(null);
+
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Utilisateur non trouvé"));
+        }
 
         user.setLastLogin(LocalDateTime.now());
         userRepository.save(user);
 
-        // ✅ IMPORTANT : Ne déclencher le diagnostic QUE si étudiant et diagnostic pas encore fait
+        // Déclencher diagnostic si étudiant et pas encore fait
         if (user.getRole() == User.UserRole.STUDENT && !user.isDiagnosticCompleted()) {
             try {
                 diagnosticService.triggerDiagnostic(user.getId().toString());
             } catch (Exception e) {
-                // Ne pas échouer la connexion en cas d'échec du diagnostic
                 System.err.println("Erreur diagnostic: " + e.getMessage());
             }
         }
@@ -109,19 +126,33 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<AuthResponse> refreshToken(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<?> refreshToken(@RequestHeader(value = "Authorization", required = false) String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new RuntimeException("Token invalide");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Token invalide"));
         }
 
         String refreshToken = authHeader.substring(7);
-        String userEmail = jwtService.extractUsername(refreshToken);
+        String userEmail;
+
+        try {
+            userEmail = jwtService.extractUsername(refreshToken);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Refresh token invalide"));
+        }
 
         var user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+                .orElse(null);
+
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Utilisateur non trouvé"));
+        }
 
         if (!jwtService.isTokenValid(refreshToken, user)) {
-            throw new RuntimeException("Token expiré");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Token expiré"));
         }
 
         var newJwtToken = jwtService.generateToken(user);
@@ -139,14 +170,15 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    // ✅ NOUVEAU : /me pour que le frontend sache rôle + diagnosticCompleted + level
     @GetMapping("/me")
     public ResponseEntity<?> me(Authentication authentication) {
         if (authentication == null) return ResponseEntity.status(401).build();
 
         String email = authentication.getName();
         var user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+                .orElse(null);
+
+        if (user == null) return ResponseEntity.status(404).body(Map.of("message", "Utilisateur non trouvé"));
 
         Map<String, Object> data = new HashMap<>();
         data.put("userId", user.getId());
@@ -161,7 +193,6 @@ public class AuthController {
         return ResponseEntity.ok(data);
     }
 
-    // ✅ NOUVEAU : marquer diagnostic terminé (à appeler à la fin du test)
     @PostMapping("/diagnostic/complete")
     public ResponseEntity<?> completeDiagnostic(Authentication authentication,
                                                 @Valid @RequestBody DiagnosticCompleteRequest req) {

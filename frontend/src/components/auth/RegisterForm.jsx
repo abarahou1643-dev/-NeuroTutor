@@ -1,58 +1,44 @@
-// components/auth/RegisterForm.jsx
-import React, { useState } from 'react';
-import { Mail, Lock, User, UserPlus } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+// frontend/src/components/auth/RegisterForm.jsx
+import React, { useState } from "react";
+import { Mail, Lock, User, UserPlus } from "lucide-react";
+import { useAuth } from "../../contexts/AuthContext";
 
 const RegisterForm = ({ onSuccess }) => {
-  const { login } = useAuth();
+  const { register } = useAuth(); // ✅ register depuis AuthContext
+
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    firstName: '',
-    lastName: '',
-    role: 'STUDENT'
+    email: "",
+    password: "",
+    firstName: "",
+    lastName: "",
+    role: "STUDENT",
   });
+
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
-      const response = await fetch('http://localhost:8080/api/v1/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData)
-      });
+      const result = await register(formData);
 
-      if (response.ok) {
-        const data = await response.json();
-        login({
-          id: data.userId,
-          email: data.email,
-          firstName: data.firstName,
-          lastName: data.lastName,
-          role: data.role
-        }, data.token);
-
+      if (result.success) {
         if (onSuccess) onSuccess();
       } else {
-        const errorData = await response.json();
-        setError(errorData.message || 'Erreur d\'inscription');
+        setError(result.error || "Erreur d'inscription");
       }
-    } catch (error) {
-      setError('Erreur de connexion au serveur');
+    } catch (err) {
+      setError("Erreur de connexion au serveur");
     } finally {
       setLoading(false);
     }
@@ -75,10 +61,11 @@ const RegisterForm = ({ onSuccess }) => {
             value={formData.firstName}
             onChange={handleChange}
             required
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
             placeholder="Jean"
           />
         </div>
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Nom
@@ -89,7 +76,7 @@ const RegisterForm = ({ onSuccess }) => {
             value={formData.lastName}
             onChange={handleChange}
             required
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
             placeholder="Dupont"
           />
         </div>
@@ -109,7 +96,7 @@ const RegisterForm = ({ onSuccess }) => {
           value={formData.email}
           onChange={handleChange}
           required
-          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
           placeholder="exemple@neurotutor.com"
         />
       </div>
@@ -128,8 +115,8 @@ const RegisterForm = ({ onSuccess }) => {
           value={formData.password}
           onChange={handleChange}
           required
-          minLength="6"
-          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+          minLength={6}
+          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
           placeholder="Minimum 6 caractères"
         />
       </div>
@@ -143,7 +130,7 @@ const RegisterForm = ({ onSuccess }) => {
           name="role"
           value={formData.role}
           onChange={handleChange}
-          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
         >
           <option value="STUDENT">Étudiant</option>
           <option value="TEACHER">Enseignant</option>
@@ -151,6 +138,7 @@ const RegisterForm = ({ onSuccess }) => {
         </select>
       </div>
 
+      {/* Error */}
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
           ❌ {error}
@@ -161,7 +149,7 @@ const RegisterForm = ({ onSuccess }) => {
       <button
         type="submit"
         disabled={loading}
-        className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-medium hover:opacity-90 transition disabled:opacity-50 flex items-center justify-center gap-2"
+        className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-medium hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
       >
         {loading ? (
           <>

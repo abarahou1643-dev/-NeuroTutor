@@ -1,42 +1,43 @@
-// config.js - Configuration centrale
+// src/config.js
 export const API_CONFIG = {
-  AUTH_SERVICE: "http://localhost:8080",
-  EXERCISE_SERVICE: "http://localhost:8083",
-  AI_SERVICE: "http://localhost:8082",
-  FRONTEND_URL: "http://localhost:5174"
+  AUTH_SERVICE: "http://127.0.0.1:8081",
+  EXERCISE_SERVICE: "http://127.0.0.1:8083",
+  AI_SERVICE: "http://127.0.0.1:8082",
+  FRONTEND_URL: "http://127.0.0.1:5174",
+};
+
+export const STORAGE_KEYS = {
+  TOKEN: "token",
+  USER: "user",
+  USER_LEVEL: "userLevel",
+  DIAGNOSTIC_RESULT: "diagnosticResult",
 };
 
 export const API_ENDPOINTS = {
   AUTH: {
     LOGIN: `${API_CONFIG.AUTH_SERVICE}/api/v1/auth/login`,
     REGISTER: `${API_CONFIG.AUTH_SERVICE}/api/v1/auth/register`,
-    REFRESH: `${API_CONFIG.AUTH_SERVICE}/api/v1/auth/refresh`,
-    HEALTH: `${API_CONFIG.AUTH_SERVICE}/health`
+    ME: `${API_CONFIG.AUTH_SERVICE}/api/v1/auth/me`,
+    DIAGNOSTIC_COMPLETE: `${API_CONFIG.AUTH_SERVICE}/api/v1/auth/diagnostic/complete`,
   },
   DIAGNOSTIC: {
     START: `${API_CONFIG.EXERCISE_SERVICE}/api/v1/diagnostic/start`,
     SUBMIT: (testId) => `${API_CONFIG.EXERCISE_SERVICE}/api/v1/diagnostic/submit/${testId}`,
     RESULT: (studentId) => `${API_CONFIG.EXERCISE_SERVICE}/api/v1/diagnostic/result/${studentId}`,
-    HEALTH: `${API_CONFIG.EXERCISE_SERVICE}/api/v1/diagnostic/health`
   },
   EXERCISES: {
-    BASE: `${API_CONFIG.EXERCISE_SERVICE}/api/v1/exercises`,
-    HEALTH: `${API_CONFIG.EXERCISE_SERVICE}/health`
+    LIST: `${API_CONFIG.EXERCISE_SERVICE}/api/v1/exercises`,
+    BY_ID: (id) => `${API_CONFIG.EXERCISE_SERVICE}/api/v1/exercises/${id}`,
+  },
+  SUBMISSIONS: {
+    JSON: (exerciseId) => `${API_CONFIG.EXERCISE_SERVICE}/api/v1/submissions/${exerciseId}`,
+    MULTIPART: (exerciseId) => `${API_CONFIG.EXERCISE_SERVICE}/api/v1/submissions/${exerciseId}/multipart`,
   },
   AI: {
     HEALTH: `${API_CONFIG.AI_SERVICE}/health`,
-    EVALUATE: `${API_CONFIG.AI_SERVICE}/api/v1/ai/evaluate`
-  }
-};
-
-export const APP_CONFIG = {
-  APP_NAME: "NeuroTutor",
-  VERSION: "1.0.0",
-  DEFAULT_TIMEOUT: 10000,
-  STORAGE_KEYS: {
-    TOKEN: "neurotutor_token",
-    USER: "neurotutor_user",
-    USER_LEVEL: "neurotutor_user_level",
-    DIAGNOSTIC_RESULT: "neurotutor_diagnostic_result"
-  }
+    OCR_CAP: `${API_CONFIG.AI_SERVICE}/ocr/ocr/capabilities`,
+    OCR_PROCESS: `${API_CONFIG.AI_SERVICE}/ocr/ocr/process`,
+    OCR_ANALYZE: `${API_CONFIG.AI_SERVICE}/ocr/ocr/analyze`,
+    EVALUATE: `${API_CONFIG.AI_SERVICE}/evaluation/evaluate`,
+  },
 };

@@ -1,12 +1,13 @@
 package com.neurotutor.exercise.controller;
 
 import com.neurotutor.exercise.model.Exercise;
-import com.neurotutor.exercise.service.ExerciseService;
+import com.neurotutor.exercise.repository.ExerciseRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/exercises")
@@ -14,42 +15,37 @@ import java.util.List;
 @CrossOrigin(origins = "*")
 public class ExerciseController {
 
-    private final ExerciseService exerciseService;
+    private final ExerciseRepository exerciseRepository;
 
-    // ✅ GET /api/v1/exercises?level=BEGINNER
+    // ✅ LIST: /api/v1/exercises?difficulty=...&topic=...
     @GetMapping
-    public ResponseEntity<List<Exercise>> getAllExercises(
-            @RequestParam(value = "level", required = false) String userLevel
+    public Map<String, Object> listExercises(
+            @RequestParam(required = false) String difficulty,
+            @RequestParam(required = false) String topic
     ) {
-        return ResponseEntity.ok(exerciseService.getAllExercises(userLevel));
+        List<Exercise> exercises;
+
+        if (difficulty != null && topic != null) {
+            exercises = exerciseRepository.findByDifficultyAndTopicsContaining(difficulty, topic);
+        } else if (difficulty != null) {
+            exercises = exerciseRepository.findByDifficulty(difficulty);
+        } else if (topic != null) {
+            exercises = exerciseRepository.findByTopicsContaining(topic);
+        } else {
+            exercises = exerciseRepository.findAll();
+        }
+
+        return Map.of(
+                "value", exercises,
+                "Count", exercises.size()
+        );
     }
 
-    // ✅ GET /api/v1/exercises/{id}
+    // ✅ FIX 404: /api/v1/exercises/{id}
     @GetMapping("/{id}")
     public ResponseEntity<Exercise> getExerciseById(@PathVariable String id) {
-        return exerciseService.getExerciseById(id)
+        return exerciseRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
-    }
-
-    // ✅ POST /api/v1/exercises
-    @PostMapping
-    public ResponseEntity<?> createExercise(@RequestBody Exercise exercise) {
-        try {
-            Exercise saved = exerciseService.createExercise(exercise);
-            return ResponseEntity.ok(saved);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
-
-    // ✅ POST /api/v1/exercises/bulk
-    @PostMapping("/bulk")
-    public ResponseEntity<?> bulkCreate(@RequestBody List<Exercise> exercises) {
-        try {
-            return ResponseEntity.ok(exerciseService.bulkCreate(exercises));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
     }
 }

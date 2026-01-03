@@ -1,4 +1,4 @@
-﻿// src/App.jsx - VERSION FINALE (avec redirection selon rôle + diagnostic) - CORRIGÉE
+﻿// src/App.jsx - VERSION FINALE (TEACHER dashboard séparé + redirection rôle + diagnostic STUDENT)
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
@@ -12,11 +12,15 @@ import Exercises from "./pages/Exercises";
 import ExercisePage from "./pages/ExercisePage";
 import Profile from "./pages/Profile";
 
+// ✅ TEACHER pages
+import TeacherDashboard from "./pages/teacher/TeacherDashboard";
+import TeacherExercises from "./pages/teacher/TeacherExercises";
+
 import ProtectedRoute from "./components/common/ProtectedRoute";
 import LoadingSpinner from "./components/common/LoadingSpinner";
 import "./App.css";
 
-// Style du conteneur principal
+// Styles
 const appContainerStyle = {
   minHeight: "100%",
   display: "flex",
@@ -25,7 +29,6 @@ const appContainerStyle = {
   flex: 1,
 };
 
-// Style pour le conteneur de page
 const pageContainerStyle = {
   flex: 1,
   display: "flex",
@@ -35,7 +38,6 @@ const pageContainerStyle = {
   overflow: "auto",
 };
 
-// Style pour la page 404
 const notFoundStyle = {
   display: "flex",
   alignItems: "center",
@@ -46,31 +48,29 @@ const notFoundStyle = {
   textAlign: "center",
 };
 
-// ✅ Redirection racine basée sur AuthContext (au lieu de localStorage direct)
+// ✅ IMPORTANT: normaliser le rôle (ROLE_TEACHER -> TEACHER)
+const normalizeRole = (r) => String(r || "").toUpperCase().replace("ROLE_", "");
+
+// ✅ Redirection racine basée sur AuthContext
 const RootRedirect = () => {
   const { user, loading, isAuthenticated } = useAuth();
 
-  if (loading) {
-    return <LoadingSpinner text="Chargement..." />;
-  }
+  if (loading) return <LoadingSpinner text="Chargement..." />;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/login" replace />;
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
+  const role = normalizeRole(user.role);
 
-  // si user n'est pas encore prêt (rare) -> dashboard
-  if (!user) {
-    return <Navigate to="/dashboard" replace />;
-  }
+  // ✅ TEACHER : toujours vers dashboard enseignant
+  if (role === "TEACHER") return <Navigate to="/teacher" replace />;
 
-  // ✅ Si diagnostic pas fait (seulement STUDENT)
-  if (user.role === "STUDENT" && user.diagnosticCompleted === false) {
+  // ✅ ADMIN : (si tu veux plus tard un admin panel)
+  if (role === "ADMIN") return <Navigate to="/dashboard" replace />;
+
+  // ✅ STUDENT : diagnostic obligatoire si pas fait
+  if (role === "STUDENT" && user.diagnosticCompleted === false) {
     return <Navigate to="/diagnostic" replace />;
   }
-
-  // ✅ Redirection par rôle (pour l’instant tout vers dashboard)
-  if (user.role === "TEACHER") return <Navigate to="/dashboard" replace />;
-  if (user.role === "ADMIN") return <Navigate to="/dashboard" replace />;
 
   return <Navigate to="/dashboard" replace />;
 };
@@ -83,27 +83,73 @@ const App = () => {
           <Router>
             <Routes>
               {/* Routes publiques */}
-              <Route path="/login" element={<div style={pageContainerStyle}><Login /></div>} />
-              <Route path="/register" element={<div style={pageContainerStyle}><Register /></div>} />
+              <Route
+                path="/login"
+                element={
+                  <div style={pageContainerStyle}>
+                    <Login />
+                  </div>
+                }
+              />
+              <Route
+                path="/register"
+                element={
+                  <div style={pageContainerStyle}>
+                    <Register />
+                  </div>
+                }
+              />
 
               {/* ✅ Racine */}
               <Route path="/" element={<RootRedirect />} />
 
-              {/* Routes protégées */}
+              {/* ✅ Diagnostic (uniquement utile pour STUDENT) */}
               <Route
                 path="/diagnostic"
                 element={
-                  <ProtectedRoute requireDiagnostic={false}>
-                    <div style={pageContainerStyle}><DiagnosticTest /></div>
+                  <ProtectedRoute requireDiagnostic={false} allowedRoles={["STUDENT", "ADMIN", "TEACHER"]}>
+                    <div style={pageContainerStyle}>
+                      <DiagnosticTest />
+                    </div>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* =========================
+                  ✅ ROUTES TEACHER
+                 ========================= */}
+              <Route
+                path="/teacher"
+                element={
+                  <ProtectedRoute requireDiagnostic={false} allowedRoles={["TEACHER"]}>
+                    <div style={pageContainerStyle}>
+                      <TeacherDashboard />
+                    </div>
                   </ProtectedRoute>
                 }
               />
 
               <Route
+                path="/teacher/exercises"
+                element={
+                  <ProtectedRoute requireDiagnostic={false} allowedRoles={["TEACHER"]}>
+                    <div style={pageContainerStyle}>
+                      <TeacherExercises />
+                    </div>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* =========================
+                  ✅ ROUTES STUDENT
+                 ========================= */}
+              <Route
                 path="/dashboard"
                 element={
-                  <ProtectedRoute requireDiagnostic={true}>
-                    <div style={pageContainerStyle}><Dashboard /></div>
+                  <ProtectedRoute requireDiagnostic={true} allowedRoles={["STUDENT", "ADMIN"]}>
+                    <div style={pageContainerStyle}>
+                      <Dashboard />
+                    </div>
                   </ProtectedRoute>
                 }
               />
@@ -111,8 +157,10 @@ const App = () => {
               <Route
                 path="/exercises"
                 element={
-                  <ProtectedRoute requireDiagnostic={true}>
-                    <div style={pageContainerStyle}><Exercises /></div>
+                  <ProtectedRoute requireDiagnostic={true} allowedRoles={["STUDENT", "ADMIN"]}>
+                    <div style={pageContainerStyle}>
+                      <Exercises />
+                    </div>
                   </ProtectedRoute>
                 }
               />
@@ -120,18 +168,22 @@ const App = () => {
               <Route
                 path="/exercise/:id"
                 element={
-                  <ProtectedRoute requireDiagnostic={true}>
-                    <div style={pageContainerStyle}><ExercisePage /></div>
+                  <ProtectedRoute requireDiagnostic={true} allowedRoles={["STUDENT", "ADMIN"]}>
+                    <div style={pageContainerStyle}>
+                      <ExercisePage />
+                    </div>
                   </ProtectedRoute>
                 }
               />
 
-              {/* ✅ Profil : je conseille requireDiagnostic={false} */}
+              {/* ✅ Profil : accessible sans diagnostic */}
               <Route
                 path="/profile"
                 element={
-                  <ProtectedRoute requireDiagnostic={false}>
-                    <div style={pageContainerStyle}><Profile /></div>
+                  <ProtectedRoute requireDiagnostic={false} allowedRoles={["STUDENT", "TEACHER", "ADMIN"]}>
+                    <div style={pageContainerStyle}>
+                      <Profile />
+                    </div>
                   </ProtectedRoute>
                 }
               />

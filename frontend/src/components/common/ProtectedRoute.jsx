@@ -1,34 +1,47 @@
-// frontend/src/components/common/ProtectedRoute.jsx
+// src/components/common/ProtectedRoute.jsx
 import React from "react";
-import { Navigate } from "react-router-dom";
-import LoadingSpinner from "./LoadingSpinner";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
+import LoadingSpinner from "./LoadingSpinner";
 
-const ProtectedRoute = ({ children, requireDiagnostic = false, allowedRoles }) => {
+// Normalise ROLE_STUDENT -> STUDENT
+const normalizeRole = (r) => String(r || "").toUpperCase().replace("ROLE_", "");
+
+const ProtectedRoute = ({
+  children,
+  allowedRoles = [],
+  requireDiagnostic = false,
+}) => {
   const { user, loading, isAuthenticated } = useAuth();
+  const location = useLocation();
 
+  // ⏳ Chargement auth
   if (loading) {
-    return <LoadingSpinner text="Vérification de l'authentification..." />;
+    return <LoadingSpinner text="Chargement..." />;
   }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+  // ❌ Pas connecté
+  if (!isAuthenticated || !user) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  // ✅ Gestion des rôles (optionnel)
-  if (allowedRoles && Array.isArray(allowedRoles)) {
-    if (!user?.role || !allowedRoles.includes(user.role)) {
-      return <Navigate to="/dashboard" replace />;
-    }
+  const role = normalizeRole(user.role);
+
+  // ❌ Rôle non autorisé
+  if (allowedRoles.length > 0 && !allowedRoles.includes(role)) {
+    return <Navigate to="/" replace />;
   }
 
-  // ✅ Diagnostic uniquement pour STUDENT
-  if (requireDiagnostic) {
-    if (user?.role === "STUDENT" && user?.diagnosticCompleted === false) {
-      return <Navigate to="/diagnostic" replace />;
-    }
+  // ❌ Diagnostic requis pour STUDENT
+  if (
+    requireDiagnostic &&
+    role === "STUDENT" &&
+    user.diagnosticCompleted === false
+  ) {
+    return <Navigate to="/diagnostic" replace />;
   }
 
+  // ✅ Autorisé → on affiche la vraie page demandée
   return children;
 };
 

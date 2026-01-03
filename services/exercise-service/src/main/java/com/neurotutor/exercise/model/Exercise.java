@@ -32,27 +32,28 @@ public class Exercise {
     private List<String> topics;
     private List<String> tags;
 
-    /**
-     * ✅ solution attendue (ex: "x=5", "13", "3/4")
-     */
     private String solution;
 
-    /**
-     * ✅ indices / étapes
-     */
     private List<String> hints;
     private List<String> steps;
 
     /**
-     * ✅ NEW : types de réponse acceptés
-     * Ex: ["TEXT"] ou ["TEXT","IMAGE"] ou ["AUDIO"]
+     * Ex: ["TEXT"] ou ["TEXT","IMAGE"]
      */
     private List<String> responseTypes;
+
+    private String explanationText;
+
+    // ✅ NEW FIELDS (aligné avec ton JSON)
+    private Boolean stepsRequired;     // true = correction step-by-step obligatoire
+    private String correctionMode;     // ex: "AUTO" / "AI" / "MANUAL"
+    private Boolean allowImage;
+    private Boolean allowAudio;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    private Integer estimatedTime; // minutes
+    private Integer estimatedTime;
     private Integer points;
 
     private Boolean isPublished;
