@@ -46,3 +46,9 @@ services/exercise-service/uploads/
 ### Local / test ###
 payload.json
 -Uri
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+git add -u
