@@ -191,6 +191,34 @@ https://github.com/user-attachments/assets/cbd63dc0-b234-472f-ad76-92b284077817
 
 
 
+https://github.com/user-attachments/assets/8f325f7b-78d0-4296-8170-c8d831e4f6c1
+
+
+
+<img width="1600" height="756" alt="teacher_dashboard_simple png" src="https://github.com/user-attachments/assets/a12315be-aa49-41ff-842b-6d74678ad208" />
+
+
+![WhatsApp Image 2026-01-03 at 20 30 48](https://github.com/user-attachments/assets/496de9bc-2acb-4067-b48d-039c655e989d)
+
+![WhatsApp Image 2026-01-03 at 20 04 17 (1)](https://github.com/user-attachments/assets/e02e26c6-b670-4c8e-8f16-7749e1664061)
+
+
+![WhatsApp Image 2026-01-03 at 20 54 50](https://github.com/user-attachments/assets/bf802500-5192-4026-a66b-af5191e468b7)
+
+![WhatsApp Image 2026-01-03 at 17 11 48](https://github.com/user-attachments/assets/fb9f0559-47a1-41c7-be52-68db21659cd9)
+
+
+![WhatsApp Image 2026-01-03 at 17 10 18](https://github.com/user-attachments/assets/5fae6093-4728-483d-8698-4165dca2f276)
+
+![WhatsApp Image 2026-01-03 at 17 56 36](https://github.com/user-attachments/assets/1b727333-8a98-4d8e-b315-88449cc7126a)
+
+![WhatsApp Image 2026-01-03 at 18 01 26](https://github.com/user-attachments/assets/e2fc26b8-120c-4492-9910-23dd847481be)
+
+![WhatsApp Image 2026-01-03 at 18 05 12](https://github.com/user-attachments/assets/8bf46053-b22d-45d5-bf83-eedf15c58f21)
+
+
+![WhatsApp Image 2026-01-03 at 17 55 41](https://github.com/user-attachments/assets/86793ded-149a-4fca-a763-2d7a3ca8afd9)
+
 
 ##  Conclusion
 
