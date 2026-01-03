@@ -198,6 +198,9 @@ https://github.com/user-attachments/assets/8f325f7b-78d0-4296-8170-c8d831e4f6c1
 <img width="1600" height="756" alt="teacher_dashboard_simple png" src="https://github.com/user-attachments/assets/a12315be-aa49-41ff-842b-6d74678ad208" />
 
 
+<img width="923" height="423" alt="image" src="https://github.com/user-attachments/assets/1d46ca20-83d0-4337-b41e-e5d6fc49ad3a" />
+
+
 ![WhatsApp Image 2026-01-03 at 20 30 48](https://github.com/user-attachments/assets/496de9bc-2acb-4067-b48d-039c655e989d)
 
 ![WhatsApp Image 2026-01-03 at 20 04 17 (1)](https://github.com/user-attachments/assets/e02e26c6-b670-4c8e-8f16-7749e1664061)
